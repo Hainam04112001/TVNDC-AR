@@ -44,10 +44,30 @@
   <body>
 
     <!-- Lớp phủ bắt buộc chạm màn hình để kích hoạt video trên điện thoại -->
-    <div id="startButton" onclick="startAR()">
-      <div style="margin-bottom: 15px;">👉 Bấm vào đây để bắt đầu AR</div>
-      <p style="font-size: 14px; color: #ccc;">(Giúp kích hoạt video và camera trên điện thoại)</p>
-    </div>
+<!-- Chèn iframe này vào vị trí bạn muốn hiển thị nút (nằm đè lên trên poster/ar-screen) -->
+    <iframe src="button-ui.html" id="arButtonIframe" style="position: absolute; inset: 0; width: 100%; height: 100%; border: none; background: transparent; z-index: 10; pointer-events: none;"></iframe>
+
+    <script>
+      // Cho phép iframe nhận sự kiện click chuột/chạm nhưng các vùng trống vẫn xuyên qua được
+      document.getElementById('arButtonIframe').style.pointerEvents = 'auto';
+
+      // Lắng nghe tín hiệu từ file button-ui.html khi người dùng bấm nút
+      window.addEventListener("message", function(event) {
+        if (event.data === "START_AR") {
+          startAR(); // Gọi hàm chạy AR sẵn có trong index.html của bạn
+        }
+      });
+
+      // Hàm AR hiện tại của bạn
+      function startAR() {
+        console.log("Đã kích hoạt AR thành công!");
+        
+        // Ẩn iframe nút bấm đi sau khi người dùng bấm bắt đầu
+        document.getElementById('arButtonIframe').style.display = "none";
+        
+        // Viết tiếp logic AR đang chạy ổn định của bạn vào đây...
+      }
+    </script>
 
     <!-- Khởi tạo Scene AR -->
     <a-scene mindar-image="imageTargetSrc: targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
