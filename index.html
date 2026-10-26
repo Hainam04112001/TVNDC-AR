@@ -71,7 +71,7 @@
       
     </a-scene>
 
-    <script>
+<script>
       function startAR() {
         // Ẩn màn hình nút bấm sau khi người dùng chạm vào
         document.querySelector("#startButton").style.display = 'none';
@@ -92,18 +92,27 @@
         const plane = document.querySelector("#video-plane");
         const textEl = document.querySelector("#ar-text");
 
-        // Tự động điều chỉnh kích thước a-plane theo đúng tỷ lệ gốc của video
+        // Tự động điều chỉnh kích thước a-plane theo đúng tỷ lệ gốc của video (Hỗ trợ cả video đứng và ngang)
         video.addEventListener('loadedmetadata', function() {
           const videoWidth = video.videoWidth;
           const videoHeight = video.videoHeight;
           
           if (videoWidth && videoHeight) {
-            const aspectRatio = videoHeight / videoWidth;
-            plane.setAttribute('width', 1);
-            plane.setAttribute('height', aspectRatio);
+            const aspectRatio = videoWidth / videoHeight; // Tỷ lệ rộng / cao
             
-            // Tự động dịch chuyển đoạn text xuống phía dưới video cho cân đối
-            textEl.setAttribute('position', `0 -${(aspectRatio / 2) + 0.15} 0`);
+            // Nếu là video khổ đứng (chiều cao lớn hơn chiều rộng)
+            if (videoHeight > videoWidth) {
+              plane.setAttribute('height', 1);
+              plane.setAttribute('width', aspectRatio);
+              // Đẩy chữ xuống thấp hơn một chút theo chiều cao chuẩn của video đứng
+              textEl.setAttribute('position', `0 -0.65 0`);
+            } else {
+              // Video khổ ngang thông thường
+              const heightRatio = videoHeight / videoWidth;
+              plane.setAttribute('width', 1);
+              plane.setAttribute('height', heightRatio);
+              textEl.setAttribute('position', `0 -${(heightRatio / 2) + 0.15} 0`);
+            }
           }
         });
 
