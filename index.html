@@ -63,12 +63,12 @@
       
     </a-scene>
 
-    <script>
+<script>
       function startAR() {
         // Ẩn màn hình nút bấm đi
         document.querySelector("#startButton").style.display = 'none';
         
-        // Kích hoạt load trước video bằng cách ép chạy ngầm rồi pause ngay lập tức
+        // Kích hoạt load trước video
         const video = document.querySelector("#ar-video");
         video.play().then(() => {
           video.pause();
@@ -81,6 +81,24 @@
       document.addEventListener("DOMContentLoaded", function() {
         const target = document.querySelector("#target");
         const video = document.querySelector("#ar-video");
+        const plane = document.querySelector("a-plane");
+
+        // Lắng nghe sự kiện video tải xong metadata để tính tỷ lệ chuẩn
+        video.addEventListener('loadedmetadata', function() {
+          const videoWidth = video.videoWidth;
+          const videoHeight = video.videoHeight;
+          
+          if (videoWidth && videoHeight) {
+            // Đặt chiều rộng cơ sở là 1 đơn vị, tính chiều cao tương ứng theo tỷ lệ gốc của video
+            const aspectRatio = videoHeight / videoWidth;
+            plane.setAttribute('width', 1);
+            plane.setAttribute('height', aspectRatio);
+            
+            // Tự động dịch chuyển chữ bên dưới xuống một chút theo chiều cao mới của video
+            const textEl = document.querySelector("a-text");
+            textEl.setAttribute('position', `0 -${(aspectRatio / 2) + 0.15} 0`);
+          }
+        });
 
         // Khi quét trúng ảnh -> Phát video từ đầu
         target.addEventListener("targetFound", event => {
