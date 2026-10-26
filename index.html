@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>Trải nghiệm thực tế ảo AR - Thư viện Nguyễn Đình Chiểu Vĩnh Long</title>
 
     <!-- Thư viện A-Frame và MindAR -->
@@ -10,40 +10,57 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      body {
-        margin: 0;
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body {
+        width: 100%;
+        height: 100%;
         overflow: hidden;
+        background: #000;
+        font-family: Arial, Helvetica, sans-serif;
       }
-      /* Style cho lớp phủ màn hình chào và nút bấm AR */
-      #startButton {
+
+      /* Khung bao bọc chuẩn tỷ lệ 9:16 tối ưu cho màn hình điện thoại */
+      .ar-viewport {
         position: fixed;
         top: 0;
         left: 0;
+        width: 100vw;
+        height: 100vh;
+        max-width: 56.25vh; /* Giữ tỷ lệ 9:16 nếu màn hình quá rộng */
+        left: 50%;
+        transform: translateX(-50%);
+        overflow: hidden;
+      }
+
+      /* Lớp phủ màn hình bắt đầu (Landing Screen) tỷ lệ 9:16 */
+      #startButton {
+        position: absolute;
+        inset: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.9);
+        background: linear-gradient(135deg, rgba(10, 10, 30, 0.95), rgba(0, 0, 0, 0.98));
         color: white;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         align-items: center;
         z-index: 9999;
-        font-family: Arial, Helvetica, sans-serif;
         padding: 40px 20px;
-        box-sizing: border-box;
         text-align: center;
+        cursor: pointer;
       }
 
-      /* Phần thông tin cơ quan và logo */
-      .header-info {
+      /* Phần thông tin cơ quan và thư viện ở phía trên */
+      .header-section {
         display: flex;
         flex-direction: column;
         align-items: center;
-        max-width: 90%;
+        width: 100%;
+        margin-top: 10px;
       }
 
       .agency-name {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: bold;
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -53,20 +70,23 @@
       }
 
       .library-name {
-        font-size: 18px;
+        font-size: 17px;
         font-weight: bold;
+        color: #ffffff;
         margin-bottom: 20px;
         text-shadow: 0 2px 4px rgba(0,0,0,0.8);
       }
 
+      /* Logo liên kết bằng đường link trong folder code */
       .logo-container {
         width: 85px;
         height: 85px;
         border-radius: 50%;
         overflow: hidden;
         border: 2px solid rgba(255, 255, 255, 0.4);
-        box-shadow: 0 0 20px rgba(0, 200, 255, 0.3);
-        background: rgba(255, 255, 255, 0.05);
+        box-shadow: 0 0 20px rgba(0, 150, 255, 0.4);
+        animation: logoZoom 4s ease-in-out infinite;
+        background: rgba(255,255,255,0.05);
       }
 
       .logo-container img {
@@ -75,95 +95,101 @@
         object-fit: cover;
       }
 
-      .ar-title {
+      @keyframes logoZoom {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+      }
+
+      /* Tiêu đề AR ở giữa */
+      .ar-main-title {
         font-size: 20px;
         font-weight: bold;
         text-transform: uppercase;
         letter-spacing: 1.5px;
-        text-shadow: 0 2px 8px rgba(0, 200, 255, 0.6);
-        margin: 10px 0;
+        color: #00d2ff;
+        text-shadow: 0 2px 10px rgba(0, 210, 255, 0.5);
+        margin: auto 0;
       }
 
-      /* Khung nút bấm chính */
+      /* Nút bấm phía dưới màn hình */
       .action-box {
-        background: rgba(0, 120, 255, 0.25);
+        background: rgba(0, 120, 255, 0.3);
         border: 2px solid rgba(0, 180, 255, 0.8);
-        padding: 16px 25px;
-        border-radius: 35px;
-        cursor: pointer;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        box-shadow: 0 0 20px rgba(0, 150, 255, 0.4), inset 0 0 10px rgba(0, 150, 255, 0.2);
-        transition: all 0.3s ease;
+        padding: 16px 20px;
+        border-radius: 30px;
         width: 100%;
-        max-width: 340px;
+        max-width: 320px;
+        box-shadow: 0 0 25px rgba(0, 140, 255, 0.4), inset 0 0 10px rgba(0, 140, 255, 0.2);
+        animation: buttonPulse 2s infinite ease-in-out;
+        margin-bottom: 20px;
       }
 
-      .action-box:hover {
-        background: rgba(0, 150, 255, 0.4);
-        transform: scale(1.02);
+      @keyframes buttonPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.03); }
       }
 
-      .action-box .main-text {
+      .action-box .main-btn-text {
         font-size: 16px;
         font-weight: bold;
         margin-bottom: 6px;
         color: #fff;
       }
 
-      .action-box .sub-text {
+      .action-box .sub-btn-text {
         font-size: 13px;
-        color: #ddd;
-        margin: 0;
+        color: #ccc;
       }
     </style>
   </head>
   <body>
 
-    <!-- Lớp phủ bắt buộc chạm màn hình để kích hoạt video và camera trên điện thoại -->
-    <div id="startButton" onclick="startAR()">
-      <!-- Phần Thông tin & Logo -->
-      <div class="header-info">
-        <div class="agency-name">Sở Văn hóa, Thể thao và Du lịch tỉnh Vĩnh Long</div>
-        <div class="library-name">Thư viện Nguyễn Đình Chiểu Vĩnh Long</div>
-        
-        <!-- Logo liên kết từ file trong folder code (Thay 'logo.png' bằng tên file ảnh thực tế của bạn) -->
-        <div class="logo-container">
-          <img src="assets/logo-thuvien.png" alt="Logo Thư Viện">
+    <div class="ar-viewport">
+      <!-- Lớp phủ nút bấm mở đầu (Tỷ lệ 9:16) -->
+      <div id="startButton" onclick="startAR()">
+        <!-- Phần phía trên: Tên cơ quan, Thư viện và Logo -->
+        <div class="header-section">
+          <div class="agency-name">Sở Văn hóa, Thể thao và Du lịch tỉnh Vĩnh Long</div>
+          <div class="library-name">Thư viện Nguyễn Đình Chiểu Vĩnh Long</div>
+          
+          <!-- Logo lấy từ đường link trong folder code (Thay 'logo.png' bằng tên file ảnh thực tế của bạn) -->
+          <div class="logo-container">
+            <img src="assets/logo-thuvien.png" alt="Logo Thư Viện">
+          </div>
+        </div>
+
+        <!-- Tiêu đề giữa -->
+        <div class="ar-main-title">Trải nghiệm thực tế ảo AR</div>
+
+        <!-- Nút bấm tương tác ở dưới -->
+        <div class="action-box">
+          <div class="main-btn-text">👉 Bấm vào đây để trải nghiệm AR</div>
+          <div class="sub-btn-text">(giúp kích hoạt video và camera điện thoại)</div>
         </div>
       </div>
 
-      <!-- Tiêu đề trải nghiệm -->
-      <div class="ar-title">Trải nghiệm thực tế ảo AR</div>
-
-      <!-- Nút bấm tương tác -->
-      <div class="action-box">
-        <div class="main-text">👉 Bấm vào đây để trải nghiệm AR</div>
-        <p class="sub-text">(giúp kích hoạt video và camera điện thoại)</p>
-      </div>
-    </div>
-
-    <!-- Khởi tạo Scene AR -->
-    <a-scene mindar-image="imageTargetSrc: targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-      
-      <a-assets>
-        <!-- Khai báo video (Lưu ý: Thay tên file cho khớp với file trong thư mục assets của bạn) -->
-        <video id="ar-video" src="./assets/vua_su_tu_Final.mp4" preload="auto" response-type="arraybuffer" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-      </a-assets>
-
-      <!-- Camera AR -->
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-      <!-- Điểm mốc nhận diện ảnh (Target Index 0) -->
-      <a-entity mindar-image-target="targetIndex: 0" id="target">
-        <!-- Mặt phẳng hiển thị video (Kích thước sẽ được script tự động co giãn theo tỷ lệ video) -->
-        <a-plane id="video-plane" src="#ar-video" position="0 0 0" height="0.55" width="1" rotation="0 0 0"></a-plane>
+      <!-- Khởi tạo Scene AR -->
+      <a-scene mindar-image="imageTargetSrc: targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
         
-        <!-- Dòng chữ chú thích bên dưới video (nếu cần dùng có thể mở bình luận) -->
-        <!-- <a-text id="ar-text" value="Chao mung den voi AR!" color="black" align="center" position="0 -0.35 0" scale="0.5 0.5 0.5"></a-text> -->
-      </a-entity>
-      
-    </a-scene>
+        <a-assets>
+          <!-- Khai báo video (Thay tên file cho khớp với file trong thư mục assets của bạn) -->
+          <video id="ar-video" src="./assets/vua_su_tu_Final.mp4" preload="auto" response-type="arraybuffer" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        </a-assets>
+
+        <!-- Camera AR -->
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <!-- Điểm mốc nhận diện ảnh (Target Index 0) -->
+        <a-entity mindar-image-target="targetIndex: 0" id="target">
+          <!-- Mặt phẳng hiển thị video -->
+          <a-plane id="video-plane" src="#ar-video" position="0 0 0" height="0.55" width="1" rotation="0 0 0"></a-plane>
+          
+          <!-- Dòng chữ chú thích bên dưới video (Nếu cần dùng có thể bỏ comment) -->
+          <!-- <a-text id="ar-text" value="Chao mung den voi AR!" color="black" align="center" position="0 -0.35 0" scale="0.5 0.5 0.5"></a-text> -->
+        </a-entity>
+        
+      </a-scene>
+    </div>
 
     <script>
       function startAR() {
@@ -186,25 +212,23 @@
         const plane = document.querySelector("#video-plane");
         const textEl = document.querySelector("#ar-text");
 
-        // Tự động điều chỉnh kích thước a-plane theo đúng tỷ lệ gốc của video (Hỗ trợ cả video đứng và ngang)
+        // Tự động điều chỉnh kích thước a-plane theo đúng tỷ lệ gốc của video
         video.addEventListener('loadedmetadata', function() {
           const videoWidth = video.videoWidth;
           const videoHeight = video.videoHeight;
           
           if (videoWidth && videoHeight) {
-            const aspectRatio = videoWidth / videoHeight; // Tỷ lệ rộng / cao
+            const aspectRatio = videoWidth / videoHeight;
             
-            // Nếu là video khổ đứng (chiều cao lớn hơn chiều rộng)
             if (videoHeight > videoWidth) {
               plane.setAttribute('height', 1);
               plane.setAttribute('width', aspectRatio);
-              if (textEl) textEl.setAttribute('position', `0 -0.65 0`);
+              if(textEl) textEl.setAttribute('position', `0 -0.65 0`);
             } else {
-              // Video khổ ngang thông thường
               const heightRatio = videoHeight / videoWidth;
               plane.setAttribute('width', 1);
               plane.setAttribute('height', heightRatio);
-              if (textEl) textEl.setAttribute('position', `0 -${(heightRatio / 2) + 0.15} 0`);
+              if(textEl) textEl.setAttribute('position', `0 -${(heightRatio / 2) + 0.15} 0`);
             }
           }
         });
