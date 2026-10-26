@@ -49,11 +49,11 @@
       .landing-screen .poster, .landing-screen .logo-circle {
         position: absolute; inset: 0; width: 100%; height: 100%;
         object-fit: cover; user-select: none; -webkit-user-drag: none;
-        pointer-events: none;
+        pointer-events: auto; cursor: pointer;
       }
       .landing-screen .poster { z-index: 1; }
       .landing-screen .logo-circle {
-        z-index: 4; transform-origin: 50% 47%;
+        z-index: 4; transform-origin: 50% 47%; pointer-events: none;
         animation: logoZoom 4.8s ease-in-out infinite;
       }
       @keyframes logoZoom {
@@ -213,12 +213,15 @@
 
       // Chạm/click vào dòng hướng dẫn để mở màn hình quét MindAR.
       const landingHint = document.getElementById("landingHint");
+      const landingPoster = document.querySelector(".landing-screen .poster");
       function enterAR() {
         const landing = document.getElementById("landingScreen");
         if (landing) landing.remove();
         // Gọi trong thao tác chạm của người dùng để hỗ trợ trình duyệt di động.
         startAR();
       }
+      // Cho phép bấm trực tiếp vào phần hình nền/banner phía trên (nơi có biểu tượng ngón tay).
+      if (landingPoster) landingPoster.addEventListener("click", enterAR);
       landingHint.addEventListener("click", enterAR);
       landingHint.addEventListener("keydown", function (event) {
         if (event.key === "Enter" || event.key === " ") {
