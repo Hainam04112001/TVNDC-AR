@@ -127,7 +127,7 @@
       <!-- Điểm mốc nhận diện ảnh (Target Index 0) -->
       <a-entity mindar-image-target="targetIndex: 0" id="target">
         <!-- Mặt phẳng hiển thị video (Kích thước sẽ được script tự động co giãn theo tỷ lệ video) -->
-        <a-plane id="video-plane" src="#ar-video" position="0 0 0" height="0.55" width="1" rotation="0 0 0"></a-plane>
+        <a-plane id="video-plane" src="#ar-video" position="0 0 0" height="0.825" width="1.5" rotation="0 0 0"></a-plane>
         
         <!-- Dòng chữ chú thích bên dưới video -->
         <!-- <a-text id="ar-text" value="Chao mung den voi AR!" color="black" align="center" position="0 -0.35 0" scale="0.5 0.5 0.5"></a-text> -->
@@ -266,15 +266,18 @@
             
             // Nếu là video khổ đứng (chiều cao lớn hơn chiều rộng)
             if (videoHeight > videoWidth) {
-              plane.setAttribute('height', 1);
-              plane.setAttribute('width', aspectRatio);
+              // Tăng kích thước tổng thể 1.5 lần, giữ nguyên tỷ lệ video gốc
+              const scaleFactor = 1.5;
+              plane.setAttribute('height', scaleFactor);
+              plane.setAttribute('width', aspectRatio * scaleFactor);
               // Đẩy chữ xuống thấp hơn một chút theo chiều cao chuẩn của video đứng
               if (textEl) textEl.setAttribute('position', `0 -0.65 0`);
             } else {
               // Video khổ ngang thông thường
               const heightRatio = videoHeight / videoWidth;
-              plane.setAttribute('width', 1);
-              plane.setAttribute('height', heightRatio);
+              const scaleFactor = 1.5;
+              plane.setAttribute('width', scaleFactor);
+              plane.setAttribute('height', heightRatio * scaleFactor);
               if (textEl) textEl.setAttribute('position', `0 -${(heightRatio / 2) + 0.15} 0`);
             }
           }
