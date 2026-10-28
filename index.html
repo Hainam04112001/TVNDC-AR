@@ -113,43 +113,13 @@
       <p style="font-size: 14px; color: #ccc;">(Giúp kích hoạt video và camera trên điện thoại)</p>
     </div>
 
-    <!-- Khởi tạo Scene AR -->
-    <a-scene mindar-image="imageTargetSrc: ./targets/targets-vua-su-tu.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-      
-      <a-assets>
-        <!-- Khai báo video (Lưu ý: Thay tên file cho khớp với file trong thư mục assets của bạn) -->
-        <video id="ar-video" src="./assets/vua_su_tu_Final.mp4" preload="auto" response-type="arraybuffer" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+    <!-- MindAR: một scene/camera duy nhất, hỗ trợ nhiều target. Thứ tự targetIndex phải khớp file .mind -->
+    <a-scene id="arScene" mindar-image="imageTargetSrc:targets.mind; autoStart: false; maxTrack: 3; filterMinCF: 0.0001; filterBeta: 0.001;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+      <a-assets id="arAssets">
+        <!-- Tài nguyên sẽ được tạo tự động từ TARGETS ở script bên dưới -->
       </a-assets>
-
-      <!-- Camera AR -->
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-      <!-- Điểm mốc nhận diện ảnh (Target Index 0) -->
-      <a-entity mindar-image-target="targetIndex: 0" id="target">
-        <!-- Mặt phẳng hiển thị video (Kích thước sẽ được script tự động co giãn theo tỷ lệ video) -->
-        <a-plane id="video-plane" src="#ar-video" position="0 0 0" height="0.825" width="1.5" rotation="0 0 0"></a-plane>
-        
-        <!-- Dòng chữ chú thích bên dưới video -->
-        <!-- <a-text id="ar-text" value="Chao mung den voi AR!" color="black" align="center" position="0 -0.35 0" scale="0.5 0.5 0.5"></a-text> -->
-      </a-entity>
-      
     </a-scene>
-    <script>
-      const videoTarget = document.querySelector('#ar-video');
-      const aVideo = document.querySelector('a-video');
-
-      videoTarget.addEventListener('loadedmetadata', function() {
-        // Lấy chiều rộng và chiều cao gốc của video
-        const videoWidth = this.videoWidth;
-        const videoHeight = this.videoHeight;
-        
-        // Tính tỉ lệ height theo width = 1
-        const calculatedHeight = videoHeight / videoWidth;
-        
-        // Cập nhật vào thẻ a-video
-        aVideo.setAttribute('height', calculatedHeight);
-      });
-    </script>
 
 <script>
 
@@ -236,62 +206,174 @@
       // Cho phép bấm trực tiếp vào phần hình nền/banner phía trên (nơi có biểu tượng ngón tay).
       if (landingPoster) landingPoster.addEventListener("click", enterAR);
 
-      function startAR() {
-        // Ẩn màn hình nút bấm sau khi người dùng chạm vào
-        document.querySelector("#startButton").style.display = 'none';
-        
-        // Kích hoạt load trước video để sẵn sàng phát
-        const video = document.querySelector("#ar-video");
-        video.play().then(() => {
-          video.pause();
-          video.currentTime = 0;
-        }).catch(e => {
-          console.log("Video init error:", e);
+      // ============================================================
+      // DANH SÁCH TARGET: thêm target mới vào mảng này.
+      // targetIndex phải đúng thứ tự ảnh trong file .mind đã biên dịch.
+      // type: "video" | "image" | "model" | "text"
+      // video/image dùng src trong ./assets/; model dùng file .glb/.gltf.
+      // ============================================================
+      const TARGETS = [
+        {
+          index: 0,
+          id: "vua-su-tu",
+          type: "video",
+          src: "./assets/vua_su_tu_Final.mp4",
+          width: 1.5,
+          title: "Vua Sư Tử"
+        },
+        {
+          index: 1,
+          id: "bien-dao",
+          type: "video",
+          src: "./assets/bien-dao-Final.mp4",
+          width: 1.5,
+          title: "Biển đảo Việt Nam"
+        },
+        {
+          index: 2,
+          id: "cho-noi",
+          type: "video",
+          src: "./assets/cho-noi-Final.mp4",
+          width: 1.5,
+          title: "Chợ nổi"
+        },
+        {
+          index: 3,
+          id: "con-se-thanh-cong",
+          type: "video",
+          src: "./assets/con-se-thanh-cong-Final.mp4",
+          width: 1.5,
+          title: "Con sẽ thành công"
+        }, 
+        {
+          index: 4,
+          id: "Gio-qua-rang-lieu",
+          type: "video",
+          src: "./assets/Gio-qua-rang-lieu-Final.mp4",
+          width: 1.5,
+          title: "Con sẽ thành công"
+        },
+
+        // Ví dụ thêm target video:
+        // ,{ index: 1, id: "target-2", type: "video", src: "./assets/video-2.mp4", width: 1.5, title: "Video 2" }
+        // Ví dụ thêm target ảnh:
+        // ,{ index: 2, id: "target-3", type: "image", src: "./assets/anh-3.png", width: 1.2, title: "Ảnh 3" }
+        // Ví dụ thêm mô hình 3D:
+        // ,{ index: 3, id: "target-4", type: "model", src: "./assets/mo-hinh.glb", scale: "0.5 0.5 0.5", title: "Mô hình 3D" }
+      ];
+
+      const arScene = document.querySelector('#arScene');
+      const arAssets = document.querySelector('#arAssets');
+      const activeVideos = new Set();
+      let arStarted = false;
+
+      function makeAsset(target) {
+        if (target.type === 'video') {
+          const video = document.createElement('video');
+          video.id = `asset-${target.id}`;
+          video.src = target.src;
+          video.setAttribute('preload', 'auto');
+          video.setAttribute('loop', 'true');
+          video.setAttribute('crossorigin', 'anonymous');
+          video.setAttribute('playsinline', '');
+          video.setAttribute('webkit-playsinline', '');
+          video.muted = true; // hỗ trợ tự phát trên trình duyệt di động
+          arAssets.appendChild(video);
+          return `#${video.id}`;
+        }
+        if (target.type === 'image') {
+          const image = document.createElement('img');
+          image.id = `asset-${target.id}`;
+          image.src = target.src;
+          image.setAttribute('crossorigin', 'anonymous');
+          arAssets.appendChild(image);
+          return `#${image.id}`;
+        }
+        return target.src;
+      }
+
+      function buildTargets() {
+        TARGETS.forEach((target) => {
+          const entity = document.createElement('a-entity');
+          entity.id = `target-${target.id}`;
+          entity.setAttribute('mindar-image-target', `targetIndex: ${target.index}`);
+
+          if (target.type === 'model') {
+            const model = document.createElement('a-entity');
+            model.setAttribute('gltf-model', target.src);
+            model.setAttribute('position', target.position || '0 0 0');
+            model.setAttribute('scale', target.scale || '0.5 0.5 0.5');
+            entity.appendChild(model);
+          } else if (target.type === 'text') {
+            const text = document.createElement('a-text');
+            text.setAttribute('value', target.text || target.title || 'Nội dung AR');
+            text.setAttribute('color', target.color || '#111111');
+            text.setAttribute('align', 'center');
+            text.setAttribute('position', target.position || '0 0 0');
+            text.setAttribute('width', target.textWidth || 2);
+            entity.appendChild(text);
+          } else {
+            const assetSelector = makeAsset(target);
+            const plane = document.createElement('a-plane');
+            plane.setAttribute('src', assetSelector);
+            plane.setAttribute('position', target.position || '0 0 0');
+            plane.setAttribute('rotation', target.rotation || '0 0 0');
+            plane.setAttribute('width', target.width || 1.5);
+            plane.setAttribute('height', target.height || 0.85);
+            plane.setAttribute('material', 'shader: flat; transparent: true');
+            entity.appendChild(plane);
+
+            if (target.type === 'video') {
+              const video = document.getElementById(`asset-${target.id}`);
+              const resizePlane = () => {
+                if (!video.videoWidth || !video.videoHeight) return;
+                const w = Number(target.width) || 1.5;
+                plane.setAttribute('width', w);
+                plane.setAttribute('height', w * video.videoHeight / video.videoWidth);
+              };
+              video.addEventListener('loadedmetadata', resizePlane);
+              if (video.readyState >= 1) resizePlane();
+              entity.addEventListener('targetFound', () => {
+                activeVideos.add(video);
+                if (arStarted) video.play().catch(err => console.warn('Không thể phát video AR:', err));
+              });
+              entity.addEventListener('targetLost', () => {
+                activeVideos.delete(video);
+                video.pause();
+              });
+            }
+          }
+          arScene.appendChild(entity);
         });
       }
 
-      document.addEventListener("DOMContentLoaded", function() {
-        const target = document.querySelector("#target");
-        const video = document.querySelector("#ar-video");
-        const plane = document.querySelector("#video-plane");
-        const textEl = document.querySelector("#ar-text");
+      // Tạo target trước khi MindAR bắt đầu nhận diện.
+      buildTargets();
 
-        // Tự động điều chỉnh kích thước a-plane theo đúng tỷ lệ gốc của video (Hỗ trợ cả video đứng và ngang)
-        video.addEventListener('loadedmetadata', function() {
-          const videoWidth = video.videoWidth;
-          const videoHeight = video.videoHeight;
-          
-          if (videoWidth && videoHeight) {
-            const aspectRatio = videoWidth / videoHeight; // Tỷ lệ rộng / cao
-            
-            // Nếu là video khổ đứng (chiều cao lớn hơn chiều rộng)
-            if (videoHeight > videoWidth) {
-              // Tăng kích thước tổng thể 1.5 lần, giữ nguyên tỷ lệ video gốc
-              const scaleFactor = 1.5;
-              plane.setAttribute('height', scaleFactor);
-              plane.setAttribute('width', aspectRatio * scaleFactor);
-              // Đẩy chữ xuống thấp hơn một chút theo chiều cao chuẩn của video đứng
-              if (textEl) textEl.setAttribute('position', `0 -0.65 0`);
-            } else {
-              // Video khổ ngang thông thường
-              const heightRatio = videoHeight / videoWidth;
-              const scaleFactor = 1.5;
-              plane.setAttribute('width', scaleFactor);
-              plane.setAttribute('height', heightRatio * scaleFactor);
-              if (textEl) textEl.setAttribute('position', `0 -${(heightRatio / 2) + 0.15} 0`);
-            }
-          }
+      function startAR() {
+        const startButton = document.querySelector('#startButton');
+        if (startButton) startButton.style.display = 'none';
+        arStarted = true;
+
+        // Kích hoạt quyền phát video trong thao tác chạm của người dùng.
+        document.querySelectorAll('#arAssets video').forEach(video => {
+          video.play().then(() => video.pause()).catch(() => {});
         });
 
-        // Khi camera quét trúng ảnh Marker -> Phát video
-        target.addEventListener("targetFound", event => {
-          video.play();
-        });
+        const mindar = arScene.systems['mindar-image-system'];
+        if (mindar && !arScene.hasLoaded) {
+          arScene.addEventListener('loaded', () => {
+            try { arScene.systems['mindar-image-system'].start(); }
+            catch (err) { console.error('Không thể khởi động MindAR:', err); }
+          }, { once: true });
+        } else if (mindar) {
+          try { mindar.start(); }
+          catch (err) { console.error('Không thể khởi động MindAR:', err); }
+        }
+      }
 
-        // Khi camera mất dấu ảnh Marker -> Tạm dừng video
-        target.addEventListener("targetLost", event => {
-          video.pause();
-        });
+      document.addEventListener('DOMContentLoaded', () => {
+        // Giữ nguyên cơ chế bấm banner ở giao diện mở đầu hiện tại.
       });
     </script>
   </body>
