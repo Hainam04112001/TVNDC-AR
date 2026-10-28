@@ -272,7 +272,8 @@
           const video = document.createElement('video');
           video.id = `asset-${target.id}`;
           video.src = target.src;
-          video.setAttribute('preload', 'auto');
+          // Chỉ tải metadata lúc khởi tạo; tránh tải đồng thời toàn bộ video trước khi camera bật.
+          video.setAttribute('preload', 'metadata');
           video.setAttribute('loop', 'true');
           video.setAttribute('crossorigin', 'anonymous');
           video.setAttribute('playsinline', '');
@@ -303,7 +304,7 @@
             const model = document.createElement('a-entity');
             model.setAttribute('gltf-model', target.src);
             model.setAttribute('position', target.position || '0 0 0');
-            model.setAttribute('scale', target.scale || '0.2 0.2 0.2');
+            model.setAttribute('scale', target.scale || '0.5 0.5 0.5');
             entity.appendChild(model);
           } else if (target.type === 'text') {
             const text = document.createElement('a-text');
@@ -353,29 +354,58 @@
       // Tạo target trước khi MindAR bắt đầu nhận diện.
       buildTargets();
 
+      let arStartRequested = false;
+      let arStartTime = 0;
+
       function startAR() {
+        if (arStartRequested) return;
+        arStartRequested = true;
+        arStartTime = performance.now();
+
         const startButton = document.querySelector('#startButton');
         if (startButton) startButton.style.display = 'none';
         arStarted = true;
 
-        // Kích hoạt phát video có âm thanh trong thao tác chạm của người dùng.
-        document.querySelectorAll('#arAssets video').forEach(video => {
-          video.muted = false;
-          video.volume = 1;
-          video.play().then(() => video.pause()).catch(err => {
-            console.warn('Trình duyệt chưa cho phép phát video có âm thanh:', err);
-          });
-        });
+        const startMindAR = () => {
+          const mindar = arScene.systems['mindar-image-system'];
+          if (!mindar) {
+            arStartRequested = false;
+            console.error('Không tìm thấy hệ thống MindAR image.');
+            return;
+          }
 
-        const mindar = arScene.systems['mindar-image-system'];
-        if (mindar && !arScene.hasLoaded) {
-          arScene.addEventListener('loaded', () => {
-            try { arScene.systems['mindar-image-system'].start(); }
-            catch (err) { console.error('Không thể khởi động MindAR:', err); }
-          }, { once: true });
-        } else if (mindar) {
-          try { mindar.start(); }
-          catch (err) { console.error('Không thể khởi động MindAR:', err); }
+          // Gọi start ngay khi scene sẵn sàng; bắt cả lỗi Promise của MindAR.
+          try {
+            Promise.resolve(mindar.start()).then(() => {
+              console.info(`MindAR sẵn sàng sau ${Math.round(performance.now() - arStartTime)} ms`);
+            }).catch(err => {
+              arStartRequested = false;
+              console.error('Không thể khởi động MindAR/camera:', err);
+            });
+          } catch (err) {
+            arStartRequested = false;
+            console.error('Không thể khởi động MindAR/camera:', err);
+          }
+
+          // Giữ thao tác kích hoạt phát video có âm thanh từ lần chạm của người dùng,
+          // nhưng chạy sau khi đã yêu cầu camera để không chặn lời gọi khởi động AR.
+          // preload=metadata giúp tránh tải trước toàn bộ nội dung video.
+          document.querySelectorAll('#arAssets video').forEach(video => {
+            video.muted = false;
+            video.volume = 1;
+            video.play().then(() => {
+              video.pause();
+              try { video.currentTime = 0; } catch (_) {}
+            }).catch(err => {
+              console.warn('Trình duyệt chưa cho phép kích hoạt video có âm thanh:', err);
+            });
+          });
+        };
+
+        if (arScene.hasLoaded) {
+          startMindAR();
+        } else {
+          arScene.addEventListener('loaded', startMindAR, { once: true });
         }
       }
 
