@@ -303,7 +303,7 @@
             const model = document.createElement('a-entity');
             model.setAttribute('gltf-model', target.src);
             model.setAttribute('position', target.position || '0 0 0');
-            model.setAttribute('scale', target.scale || '0.5 0.5 0.5');
+            model.setAttribute('scale', target.scale || '0.2 0.2 0.2');
             entity.appendChild(model);
           } else if (target.type === 'text') {
             const text = document.createElement('a-text');
