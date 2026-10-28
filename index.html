@@ -277,7 +277,8 @@
           video.setAttribute('crossorigin', 'anonymous');
           video.setAttribute('playsinline', '');
           video.setAttribute('webkit-playsinline', '');
-          video.muted = true; // hỗ trợ tự phát trên trình duyệt di động
+          video.muted = false; // bật âm thanh video AR
+          video.volume = 1;
           arAssets.appendChild(video);
           return `#${video.id}`;
         }
@@ -335,6 +336,8 @@
               if (video.readyState >= 1) resizePlane();
               entity.addEventListener('targetFound', () => {
                 activeVideos.add(video);
+                video.muted = false;
+                video.volume = 1;
                 if (arStarted) video.play().catch(err => console.warn('Không thể phát video AR:', err));
               });
               entity.addEventListener('targetLost', () => {
@@ -355,9 +358,13 @@
         if (startButton) startButton.style.display = 'none';
         arStarted = true;
 
-        // Kích hoạt quyền phát video trong thao tác chạm của người dùng.
+        // Kích hoạt phát video có âm thanh trong thao tác chạm của người dùng.
         document.querySelectorAll('#arAssets video').forEach(video => {
-          video.play().then(() => video.pause()).catch(() => {});
+          video.muted = false;
+          video.volume = 1;
+          video.play().then(() => video.pause()).catch(err => {
+            console.warn('Trình duyệt chưa cho phép phát video có âm thanh:', err);
+          });
         });
 
         const mindar = arScene.systems['mindar-image-system'];
