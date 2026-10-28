@@ -134,6 +134,22 @@
       </a-entity>
       
     </a-scene>
+    <script>
+      const videoTarget = document.querySelector('#ar-video');
+      const aVideo = document.querySelector('a-video');
+
+      videoTarget.addEventListener('loadedmetadata', function() {
+        // Lấy chiều rộng và chiều cao gốc của video
+        const videoWidth = this.videoWidth;
+        const videoHeight = this.videoHeight;
+        
+        // Tính tỉ lệ height theo width = 1
+        const calculatedHeight = videoHeight / videoWidth;
+        
+        // Cập nhật vào thẻ a-video
+        aVideo.setAttribute('height', calculatedHeight);
+      });
+    </script>
 
 <script>
 
